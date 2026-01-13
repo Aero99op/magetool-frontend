@@ -15,6 +15,21 @@ const getClientId = () => {
     return id
 }
 
+// Get backend URL - works for both localhost and production
+const getBackendUrl = () => {
+    if (typeof window === 'undefined') return API_BASE_URL
+
+    const hostname = window.location.hostname
+    if (hostname.includes('vercel.app') || hostname.includes('magetool')) {
+        // Production - use HF Spaces directly
+        return 'https://notaero-magetool-api.hf.space'
+    } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        // Localhost - use Docker nginx on port 80
+        return 'http://localhost'
+    }
+    return API_BASE_URL
+}
+
 export const api = axios.create({
     baseURL: API_BASE_URL,
     timeout: 300000, // 5 minutes for large file uploads
@@ -59,13 +74,13 @@ export async function uploadWithProgress(
 
 // Download file from API - Uses direct backend URL for speed
 export async function downloadFile(filename: string, downloadName?: string) {
-    // Use direct backend URL for faster downloads
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const backendUrl = getBackendUrl()
     const fileUrl = `${backendUrl}/temp/${filename}`
+    console.log('Downloading from:', fileUrl)
 
     try {
         const response = await fetch(fileUrl)
-        if (!response.ok) throw new Error('Download failed')
+        if (!response.ok) throw new Error(`Download failed: ${response.status}`)
 
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
@@ -169,7 +184,8 @@ export const videoApi = {
     ) => {
         const encodedUrl = encodeURIComponent(url)
         const clientId = getClientId()
-        const eventSource = new EventSource(`${API_BASE_URL}/api/videos/youtube-download-stream?url=${encodedUrl}&client_id=${clientId}`)
+        const backendUrl = getBackendUrl()
+        const eventSource = new EventSource(`${backendUrl}/api/videos/youtube-download-stream?url=${encodedUrl}&client_id=${clientId}`)
 
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data)
@@ -206,7 +222,8 @@ export const videoApi = {
     ) => {
         const encodedUrl = encodeURIComponent(url)
         const clientId = getClientId()
-        const eventSource = new EventSource(`${API_BASE_URL}/api/videos/instagram-download-stream?url=${encodedUrl}&client_id=${clientId}`)
+        const backendUrl = getBackendUrl()
+        const eventSource = new EventSource(`${backendUrl}/api/videos/instagram-download-stream?url=${encodedUrl}&client_id=${clientId}`)
 
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data)
@@ -243,7 +260,8 @@ export const videoApi = {
     ) => {
         const encodedUrl = encodeURIComponent(url)
         const clientId = getClientId()
-        const eventSource = new EventSource(`${API_BASE_URL}/api/videos/shorts-download-stream?url=${encodedUrl}&client_id=${clientId}`)
+        const backendUrl = getBackendUrl()
+        const eventSource = new EventSource(`${backendUrl}/api/videos/shorts-download-stream?url=${encodedUrl}&client_id=${clientId}`)
 
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data)
@@ -280,7 +298,8 @@ export const videoApi = {
     ) => {
         const encodedUrl = encodeURIComponent(url)
         const clientId = getClientId()
-        const eventSource = new EventSource(`${API_BASE_URL}/api/videos/reels-download-stream?url=${encodedUrl}&client_id=${clientId}`)
+        const backendUrl = getBackendUrl()
+        const eventSource = new EventSource(`${backendUrl}/api/videos/reels-download-stream?url=${encodedUrl}&client_id=${clientId}`)
 
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data)
