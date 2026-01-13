@@ -121,8 +121,8 @@ export default function AudioConverterPage() {
                                     key={format}
                                     onClick={() => setTargetFormat(format)}
                                     className={`px-4 py-2 rounded-xl font-medium transition-all ${targetFormat === format
-                                            ? 'bg-green-500 text-white shadow-glow-sm'
-                                            : 'bg-[var(--glass-white)] border border-[var(--glass-border)] hover:border-[var(--glass-border-hover)]'
+                                        ? 'bg-green-500 text-white shadow-glow-sm'
+                                        : 'bg-[var(--glass-white)] border border-[var(--glass-border)] hover:border-[var(--glass-border-hover)]'
                                         }`}
                                 >
                                     {format}
@@ -160,16 +160,34 @@ export default function AudioConverterPage() {
                                 {results.map((result, i) => (
                                     <div
                                         key={i}
-                                        className="flex items-center justify-between p-4 rounded-xl bg-[var(--glass-white)] border border-[var(--glass-border)]"
+                                        className={`flex items-center justify-between p-4 rounded-xl border ${
+                                            // @ts-ignore
+                                            result.error ? 'bg-red-500/10 border-red-500/20' : 'bg-[var(--glass-white)] border-[var(--glass-border)]'
+                                            }`}
                                     >
-                                        <span className="text-sm truncate flex-1 mr-4">{result.original}</span>
-                                        <Button
-                                            size="sm"
-                                            onClick={() => handleDownload(result.filename, result.original)}
-                                        >
-                                            <Download className="w-4 h-4" />
-                                            Download
-                                        </Button>
+                                        <div className="flex-1 min-w-0 mr-4">
+                                            <span className="text-sm font-medium truncate block">
+                                                {result.original || 'Unknown File'}
+                                            </span>
+                                            {/* @ts-ignore */}
+                                            {result.error && (
+                                                <span className="text-xs text-red-500 truncate block mt-1">
+                                                    {/* @ts-ignore */}
+                                                    {result.error}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* @ts-ignore */}
+                                        {!result.error && (
+                                            <Button
+                                                size="sm"
+                                                onClick={() => handleDownload(result.filename, result.original)}
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                Download
+                                            </Button>
+                                        )}
                                     </div>
                                 ))}
                             </div>
