@@ -57,20 +57,29 @@ export async function uploadWithProgress(
     })
 }
 
-// Download file from API
+// Download file from API - Uses direct backend URL for speed
 export async function downloadFile(filename: string, downloadName?: string) {
-    const response = await api.get(`/api/download/${filename}`, {
-        responseType: 'blob',
-    })
+    // Use direct backend URL for faster downloads
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const fileUrl = `${backendUrl}/temp/${filename}`
 
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.download = downloadName || filename
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
+    try {
+        const response = await fetch(fileUrl)
+        if (!response.ok) throw new Error('Download failed')
+
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = downloadName || filename
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        window.URL.revokeObjectURL(url)
+    } catch (error) {
+        console.error('Download error:', error)
+        throw error
+    }
 }
 
 // Image API
