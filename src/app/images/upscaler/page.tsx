@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import FileDropzone from '@/components/ui/FileDropzone'
 import Button from '@/components/ui/Button'
 import { useFileStore } from '@/lib/store'
-import { imageApi, downloadFile } from '@/lib/api'
+import { imageApi, downloadFile, ensureExtension } from '@/lib/api'
 
 const scales = [2, 4, 8]
 
@@ -90,7 +90,7 @@ export default function ImageUpscalerPage() {
                                             <span className="text-sm">{result.original}</span>
                                             <p className="text-xs text-[var(--text-muted)]">{result.new_size.width} x {result.new_size.height}</p>
                                         </div>
-                                        <Button size="sm" onClick={() => downloadFile(result.filename, result.original)}>
+                                        <Button size="sm" onClick={() => downloadFile(result.filename, ensureExtension(result.original, result.filename))}>
                                             <Download className="w-4 h-4" /> Download
                                         </Button>
                                     </div>

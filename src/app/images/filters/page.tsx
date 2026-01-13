@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import FileDropzone from '@/components/ui/FileDropzone'
 import Button from '@/components/ui/Button'
 import { useFileStore } from '@/lib/store'
-import { imageApi, downloadFile } from '@/lib/api'
+import { imageApi, downloadFile, ensureExtension } from '@/lib/api'
 
 const filters = [
     { id: 'grayscale', name: 'Grayscale', color: 'bg-gray-500' },
@@ -97,7 +97,7 @@ export default function FiltersPage() {
                                 {results.map((result, i) => (
                                     <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-[var(--glass-white)] border border-[var(--glass-border)]">
                                         <span className="text-sm truncate">{result.original}</span>
-                                        <Button size="sm" onClick={() => downloadFile(result.filename, result.original)}>
+                                        <Button size="sm" onClick={() => downloadFile(result.filename, ensureExtension(result.original, result.filename))}>
                                             <Download className="w-4 h-4" /> Download
                                         </Button>
                                     </div>

@@ -95,6 +95,23 @@ const mimeToExt: MimeMap = {
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx'
 }
 
+// Helper to ensure download name has proper extension
+export function ensureExtension(downloadName: string, sourceFilename: string): string {
+    // If downloadName already has an extension, return as-is
+    const lastDot = downloadName.lastIndexOf('.')
+    const lastSlash = Math.max(downloadName.lastIndexOf('/'), downloadName.lastIndexOf('\\'))
+    if (lastDot > lastSlash && lastDot > 0) {
+        return downloadName
+    }
+    // Extract extension from source filename
+    const srcLastDot = sourceFilename.lastIndexOf('.')
+    if (srcLastDot > 0) {
+        const ext = sourceFilename.substring(srcLastDot)
+        return downloadName + ext
+    }
+    return downloadName
+}
+
 // Download file from API - Uses backend endpoint with proper Content-Disposition
 export async function downloadFile(filename: string, downloadName?: string) {
     const backendUrl = getBackendUrl()
