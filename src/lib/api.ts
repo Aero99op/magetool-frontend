@@ -72,6 +72,29 @@ export async function uploadWithProgress(
     })
 }
 
+// Mime type to extension mapping
+type MimeMap = Record<string, string>
+const mimeToExt: MimeMap = {
+    'image/png': '.png',
+    'image/jpeg': '.jpg',
+    'image/jpg': '.jpg',
+    'image/webp': '.webp',
+    'image/gif': '.gif',
+    'image/bmp': '.bmp',
+    'image/tiff': '.tiff',
+    'image/x-icon': '.ico',
+    'application/pdf': '.pdf',
+    'application/zip': '.zip',
+    'text/plain': '.txt',
+    'video/mp4': '.mp4',
+    'video/webm': '.webm',
+    'audio/mpeg': '.mp3',
+    'audio/wav': '.wav',
+    'audio/ogg': '.ogg',
+    'audio/x-m4a': '.m4a',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx'
+}
+
 // Download file from API - Uses backend endpoint with proper Content-Disposition
 export async function downloadFile(filename: string, downloadName?: string) {
     const backendUrl = getBackendUrl()
@@ -87,8 +110,20 @@ export async function downloadFile(filename: string, downloadName?: string) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
+
+        let finalFilename = downloadName || filename
+
+        // Check if filename has an extension
+        if (!finalFilename.includes('.')) {
+            const contentType = response.headers.get('content-type') || blob.type
+            const ext = mimeToExt[contentType] || ''
+            if (ext) {
+                finalFilename += ext
+            }
+        }
+
         link.href = url
-        link.download = downloadName || filename
+        link.download = finalFilename
         document.body.appendChild(link)
         link.click()
         link.remove()
