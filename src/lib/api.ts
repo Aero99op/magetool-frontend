@@ -122,7 +122,12 @@ export async function downloadFile(filename: string, downloadName?: string) {
 
     try {
         const response = await fetch(fileUrl)
-        if (!response.ok) throw new Error(`Download failed: ${response.status}`)
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('File expired or not found. Please process the file again.')
+            }
+            throw new Error(`Download failed: ${response.status}`)
+        }
 
         // 1. Try to get filename from Content-Disposition header
         let finalFilename = downloadName || filename
@@ -139,7 +144,10 @@ export async function downloadFile(filename: string, downloadName?: string) {
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
 
-        // 2. Fallback: Check if filename has an extension, if not append based on type
+        // 2. Ensure filename has an extension - use source filename as reference
+        finalFilename = ensureExtension(finalFilename, filename)
+
+        // 3. Additional fallback: Check MIME type if still no extension
         if (!finalFilename.includes('.')) {
             const contentType = response.headers.get('content-type') || blob.type
             const ext = mimeToExt[contentType] || ''
