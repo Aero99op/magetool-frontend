@@ -107,13 +107,22 @@ export async function downloadFile(filename: string, downloadName?: string) {
         const response = await fetch(fileUrl)
         if (!response.ok) throw new Error(`Download failed: ${response.status}`)
 
+        // 1. Try to get filename from Content-Disposition header
+        let finalFilename = downloadName || filename
+        const disposition = response.headers.get('content-disposition')
+
+        if (disposition && disposition.includes('filename=')) {
+            const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition)
+            if (matches != null && matches[1]) {
+                finalFilename = matches[1].replace(/['"]/g, '')
+            }
+        }
+
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
 
-        let finalFilename = downloadName || filename
-
-        // Check if filename has an extension
+        // 2. Fallback: Check if filename has an extension, if not append based on type
         if (!finalFilename.includes('.')) {
             const contentType = response.headers.get('content-type') || blob.type
             const ext = mimeToExt[contentType] || ''
