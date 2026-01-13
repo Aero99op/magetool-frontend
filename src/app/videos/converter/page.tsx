@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import FileDropzone from '@/components/ui/FileDropzone'
 import Button from '@/components/ui/Button'
+import ProgressTracker, { ProgressStage } from '@/components/ui/ProgressTracker'
 import { useFileStore } from '@/lib/store'
 import { videoApi, downloadFile } from '@/lib/api'
 
@@ -17,6 +18,9 @@ export default function VideoConverterPage() {
     const [targetFormat, setTargetFormat] = useState('MP4')
     const [isProcessing, setIsProcessing] = useState(false)
     const [results, setResults] = useState<Array<{ filename: string; original: string }>>([])
+    const [progressStage, setProgressStage] = useState<ProgressStage>('idle')
+    const [progressPercent, setProgressPercent] = useState(0)
+    const [progressMessage, setProgressMessage] = useState('')
 
     const handleConvert = async () => {
         if (files.length === 0) {
@@ -25,14 +29,34 @@ export default function VideoConverterPage() {
         }
         setIsProcessing(true)
         setResults([])
+        setProgressStage('uploading')
+        setProgressPercent(0)
+        setProgressMessage(`Uploading ${files.length} video(s)...`)
+
         try {
-            const response = await videoApi.convert(files.map((f) => f.file), targetFormat.toLowerCase())
+            const response = await videoApi.convert(
+                files.map((f) => f.file),
+                targetFormat.toLowerCase(),
+                (progress) => {
+                    setProgressPercent(progress)
+                    if (progress >= 100) {
+                        setProgressStage('processing')
+                        setProgressPercent(0)
+                        setProgressMessage(`Converting to ${targetFormat}... (this may take a while)`)
+                    }
+                }
+            )
             if (response.data.success) {
                 setResults(response.data.files)
+                setProgressStage('completed')
+                setProgressMessage(`${response.data.files.length} video(s) ready!`)
                 toast.success(`Converted to ${targetFormat}!`)
             }
         } catch (error: unknown) {
-            toast.error(error instanceof Error ? error.message : 'Conversion failed')
+            const errorMessage = error instanceof Error ? error.message : 'Conversion failed'
+            toast.error(errorMessage)
+            setProgressStage('error')
+            setProgressMessage(errorMessage)
         } finally {
             setIsProcessing(false)
         }
@@ -77,6 +101,12 @@ export default function VideoConverterPage() {
                         <RefreshCw className="w-5 h-5" /> Convert to {targetFormat}
                     </Button>
 
+                    <ProgressTracker
+                        stage={progressStage}
+                        percent={progressPercent}
+                        message={progressMessage}
+                    />
+
                     {results.length > 0 && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel p-6">
                             <div className="flex items-center gap-2 mb-4">
@@ -93,7 +123,7 @@ export default function VideoConverterPage() {
                                     </div>
                                 ))}
                             </div>
-                            <Button variant="ghost" className="mt-4 w-full" onClick={() => { clearFiles(); setResults([]); }}>Convert More</Button>
+                            <Button variant="ghost" className="mt-4 w-full" onClick={() => { clearFiles(); setResults([]); setProgressStage('idle'); }}>Convert More</Button>
                         </motion.div>
                     )}
                 </motion.div>
@@ -101,3 +131,4 @@ export default function VideoConverterPage() {
         </div>
     )
 }
+

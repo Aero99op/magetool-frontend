@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import FileDropzone from '@/components/ui/FileDropzone'
 import Button from '@/components/ui/Button'
+import ProgressTracker, { ProgressStage } from '@/components/ui/ProgressTracker'
 import { useFileStore } from '@/lib/store'
 import { imageApi, downloadFile } from '@/lib/api'
 
@@ -17,6 +18,9 @@ export default function ImageConverterPage() {
     const [targetFormat, setTargetFormat] = useState('PNG')
     const [isProcessing, setIsProcessing] = useState(false)
     const [results, setResults] = useState<Array<{ filename: string; original: string }>>([])
+    const [progressStage, setProgressStage] = useState<ProgressStage>('idle')
+    const [progressPercent, setProgressPercent] = useState(0)
+    const [progressMessage, setProgressMessage] = useState('')
 
     const handleConvert = async () => {
         if (files.length === 0) {
@@ -26,6 +30,9 @@ export default function ImageConverterPage() {
 
         setIsProcessing(true)
         setResults([])
+        setProgressStage('uploading')
+        setProgressPercent(0)
+        setProgressMessage(`Uploading ${files.length} file(s)...`)
 
         try {
             // Update all file statuses to uploading
@@ -35,13 +42,21 @@ export default function ImageConverterPage() {
                 files.map((f) => f.file),
                 targetFormat.toLowerCase(),
                 (progress) => {
+                    setProgressPercent(progress)
                     files.forEach((f) => updateFileStatus(f.id, 'uploading', progress))
+                    if (progress >= 100) {
+                        setProgressStage('processing')
+                        setProgressPercent(0)
+                        setProgressMessage(`Converting to ${targetFormat}...`)
+                    }
                 }
             )
 
             if (response.data.success) {
                 const convertedFiles = response.data.files
                 setResults(convertedFiles)
+                setProgressStage('completed')
+                setProgressMessage(`${convertedFiles.length} file(s) ready for download`)
 
                 files.forEach((f, i) => {
                     if (convertedFiles[i]) {
@@ -54,6 +69,8 @@ export default function ImageConverterPage() {
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Conversion failed'
             toast.error(errorMessage)
+            setProgressStage('error')
+            setProgressMessage(errorMessage)
             files.forEach((f) => updateFileStatus(f.id, 'error'))
         } finally {
             setIsProcessing(false)
@@ -122,8 +139,8 @@ export default function ImageConverterPage() {
                                     key={format}
                                     onClick={() => setTargetFormat(format)}
                                     className={`px-4 py-2 rounded-xl font-medium transition-all ${targetFormat === format
-                                            ? 'bg-[var(--premium-blue-500)] text-white shadow-glow-sm'
-                                            : 'bg-[var(--glass-white)] border border-[var(--glass-border)] hover:border-[var(--glass-border-hover)]'
+                                        ? 'bg-[var(--premium-blue-500)] text-white shadow-glow-sm'
+                                        : 'bg-[var(--glass-white)] border border-[var(--glass-border)] hover:border-[var(--glass-border-hover)]'
                                         }`}
                                 >
                                     {format}
@@ -144,6 +161,13 @@ export default function ImageConverterPage() {
                         <RefreshCw className="w-5 h-5" />
                         Convert {files.length > 0 ? `${files.length} Image${files.length > 1 ? 's' : ''}` : 'Images'} to {targetFormat}
                     </Button>
+
+                    {/* Progress Tracker */}
+                    <ProgressTracker
+                        stage={progressStage}
+                        percent={progressPercent}
+                        message={progressMessage}
+                    />
 
                     {/* Results */}
                     {results.length > 0 && (
