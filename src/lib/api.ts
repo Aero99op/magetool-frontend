@@ -4,6 +4,9 @@ import axios, { AxiosProgressEvent } from 'axios'
 // In dev: frontend connects to backend directly on port 8000
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+// Railway backend URL for video downloads (YouTube/Instagram need external network access)
+const DOWNLOADER_URL = process.env.NEXT_PUBLIC_DOWNLOADER_URL || 'http://localhost:8000'
+
 // Get or generate Client ID
 const getClientId = () => {
     if (typeof window === 'undefined') return 'server-side'
@@ -15,19 +18,34 @@ const getClientId = () => {
     return id
 }
 
-// Get backend URL - works for both localhost and production
+// Get backend URL for file processing (HF Spaces)
 const getBackendUrl = () => {
     if (typeof window === 'undefined') return API_BASE_URL
 
     const hostname = window.location.hostname
     if (hostname.includes('vercel.app') || hostname.includes('magetool')) {
-        // Production - use HF Spaces directly
+        // Production - use HF Spaces for file processing
         return 'https://notaero-magetool-api.hf.space'
     } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
         // Localhost - use Docker nginx on port 80
         return 'http://localhost'
     }
     return API_BASE_URL
+}
+
+// Get backend URL for video downloads (Railway - needs external network access)
+const getDownloaderUrl = () => {
+    if (typeof window === 'undefined') return DOWNLOADER_URL
+
+    const hostname = window.location.hostname
+    if (hostname.includes('vercel.app') || hostname.includes('magetool')) {
+        // Production - use Railway for YouTube/Instagram downloads
+        // TODO: Replace with your Railway URL after deployment
+        return process.env.NEXT_PUBLIC_DOWNLOADER_URL || 'https://your-railway-app.railway.app'
+    } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost'
+    }
+    return DOWNLOADER_URL
 }
 
 export const api = axios.create({
@@ -255,7 +273,7 @@ export const videoApi = {
     ) => {
         const encodedUrl = encodeURIComponent(url)
         const clientId = getClientId()
-        const backendUrl = getBackendUrl()
+        const backendUrl = getDownloaderUrl()
         const eventSource = new EventSource(`${backendUrl}/api/videos/youtube-download-stream?url=${encodedUrl}&client_id=${clientId}`)
 
         eventSource.onmessage = (event) => {
@@ -293,7 +311,7 @@ export const videoApi = {
     ) => {
         const encodedUrl = encodeURIComponent(url)
         const clientId = getClientId()
-        const backendUrl = getBackendUrl()
+        const backendUrl = getDownloaderUrl()
         const eventSource = new EventSource(`${backendUrl}/api/videos/instagram-download-stream?url=${encodedUrl}&client_id=${clientId}`)
 
         eventSource.onmessage = (event) => {
@@ -331,7 +349,7 @@ export const videoApi = {
     ) => {
         const encodedUrl = encodeURIComponent(url)
         const clientId = getClientId()
-        const backendUrl = getBackendUrl()
+        const backendUrl = getDownloaderUrl()
         const eventSource = new EventSource(`${backendUrl}/api/videos/shorts-download-stream?url=${encodedUrl}&client_id=${clientId}`)
 
         eventSource.onmessage = (event) => {
@@ -369,7 +387,7 @@ export const videoApi = {
     ) => {
         const encodedUrl = encodeURIComponent(url)
         const clientId = getClientId()
-        const backendUrl = getBackendUrl()
+        const backendUrl = getDownloaderUrl()
         const eventSource = new EventSource(`${backendUrl}/api/videos/reels-download-stream?url=${encodedUrl}&client_id=${clientId}`)
 
         eventSource.onmessage = (event) => {
