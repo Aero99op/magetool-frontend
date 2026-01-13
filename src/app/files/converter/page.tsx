@@ -33,7 +33,38 @@ export default function FileConverterPage() {
         try {
             const response = await fileApi.convert(files.map((f) => f.file), conversion)
             if (response.data.success) {
-                setResults(response.data.files || [response.data.file])
+                // Normalize response - backend returns different formats for different conversions
+                let normalizedResults: Array<{ filename: string; original: string }> = []
+
+                // Check if response has files array (PDF to images or batch results)
+                if (response.data.files && Array.isArray(response.data.files)) {
+                    // Handle per-file response (batch convert)
+                    response.data.files.forEach((item: { filename?: string; files?: Array<{ filename: string }>; original?: string }) => {
+                        if (item.filename) {
+                            // Single file result
+                            normalizedResults.push({
+                                filename: item.filename,
+                                original: item.original || item.filename
+                            })
+                        } else if (item.files && Array.isArray(item.files)) {
+                            // PDF to images - multiple files per input
+                            item.files.forEach((f: { filename: string; page?: number }) => {
+                                normalizedResults.push({
+                                    filename: f.filename,
+                                    original: `Page ${f.page || 1}`
+                                })
+                            })
+                        }
+                    })
+                } else if (response.data.file) {
+                    // Single file result
+                    normalizedResults.push({
+                        filename: response.data.file.filename || response.data.file,
+                        original: response.data.file.original || response.data.file.filename || 'Converted file'
+                    })
+                }
+
+                setResults(normalizedResults)
                 toast.success('Conversion complete!')
             }
         } catch (error: unknown) {
