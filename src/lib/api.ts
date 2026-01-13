@@ -72,10 +72,12 @@ export async function uploadWithProgress(
     })
 }
 
-// Download file from API - Uses direct backend URL for speed
+// Download file from API - Uses backend endpoint with proper Content-Disposition
 export async function downloadFile(filename: string, downloadName?: string) {
     const backendUrl = getBackendUrl()
-    const fileUrl = `${backendUrl}/temp/${filename}`
+    // Use /api/download endpoint with download_name query param for proper filename
+    const encodedDownloadName = downloadName ? encodeURIComponent(downloadName) : ''
+    const fileUrl = `${backendUrl}/api/download/${filename}${downloadName ? `?download_name=${encodedDownloadName}` : ''}`
     console.log('Downloading from:', fileUrl)
 
     try {
