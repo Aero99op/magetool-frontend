@@ -147,11 +147,12 @@ export async function downloadFile(filename: string, downloadName?: string) {
             throw new Error(`Download failed: ${response.status}`)
         }
 
-        // 1. Try to get filename from Content-Disposition header
+        // 1. Try to get filename from Content-Disposition header - BUT only if downloadName is not provided
         let finalFilename = downloadName || filename
         const disposition = response.headers.get('content-disposition')
 
-        if (disposition && disposition.includes('filename=')) {
+        // Only let backend override filename if we didn't provide a specific one
+        if (!downloadName && disposition && disposition.includes('filename=')) {
             const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition)
             if (matches != null && matches[1]) {
                 finalFilename = matches[1].replace(/['"]/g, '')
